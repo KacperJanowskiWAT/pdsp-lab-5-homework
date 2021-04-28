@@ -10,10 +10,6 @@
 /* Private includes ----------------------------------------------------------*/
 #include "main.h"
 #include "pdsp/pdsp.h"
-#include "processing/processing.h"
-
-#include "Controller.h"
-
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -40,7 +36,6 @@ int main(void) {
 				DataNew = false;
 				DataOut = DataIn;
 				AD_Off(DEBUG_PROCESSING_IO);
-				MENU_Operation(&hMenu, (uint16_t)BSP_JOY_GetCurrentState());
 			}
 		}
 		AD_Off(DEBUG_MAIN_LOOP_IO);

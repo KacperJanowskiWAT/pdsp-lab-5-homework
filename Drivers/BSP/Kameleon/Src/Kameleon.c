@@ -1,6 +1,5 @@
 /* Includes ------------------------------------------------------------------*/
 #include "Kameleon.h"
-#include "Controller.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -80,8 +79,6 @@ void BSP_InitAll(void) {
 	BSP_POT_Init();
 	BSP_SEG_Init();
 	BSP_MEMS_Init(MEMS_ACC_DATARATE_10HZ, MEMS_ACC_FULLSCALE_2G);
-
-	MENU_Init(&hMenu);
 }
 
 /* JOY -----------------------------------------------------------------------*/

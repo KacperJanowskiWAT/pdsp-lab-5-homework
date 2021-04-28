@@ -7,8 +7,8 @@ extern "C" {
 
 /* Public constants ---------------------------------------------------------*/
 // Do wyboru jedna z lini konfigurującej tryb pracy:
-//#define PDSP_MODE             PDSP_MODE_POLL
-#define PDSP_MODE               PDSP_MODE_INT
+#define PDSP_MODE             PDSP_MODE_POLL
+//#define PDSP_MODE               PDSP_MODE_INT
 //#define PDSP_MODE             PDSP_MODE_INT_FRAME
 //#define PDSP_MODE             PDSP_MODE_DMA_FRAME
 

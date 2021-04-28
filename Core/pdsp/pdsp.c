@@ -87,7 +87,7 @@ void PDSP_Init(void) {
 	/*  */
 	BSP_LCD_GoTo(0, 0);
 	uint8_t buff[48];
-	sprintf((char *)buff, "Baudrate = %d", (int)PDSP_CODEC_BAUDRATE);
+	sprintf((char *)buff, "Baud = %d", (int)PDSP_CODEC_BAUDRATE);
 	BSP_LCD_WriteText(buff);
 }
 
@@ -99,7 +99,7 @@ void PDSP_CODEC_Init() {
 	CODEC_InitOut();
 	CODEC_Init();
 
-	/* DMA interrupt init */
+	/* DMA interrupt init for LPUART*/
 	/* DMA2_Channel6_IRQn interrupt configuration */
 	HAL_NVIC_SetPriority(DMA2_Channel6_IRQn, 0, 0);
 	HAL_NVIC_EnableIRQ(DMA2_Channel6_IRQn);
