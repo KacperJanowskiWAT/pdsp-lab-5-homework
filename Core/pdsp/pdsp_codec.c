@@ -21,14 +21,14 @@ uint32_t CODEC_FS[] = { 8000, 16000, 24000, 32000, 44000, 48000, 96000 };
 /* Private user code ---------------------------------------------------------*/
 void CODEC_IRQHandler(void);
 
-__STATIC_INLINE void UART_TransmitData8(uint8_t *value) {
+__STATIC_INLINE void UART_TransmitData8(int8_t *value) {
 	while (!LL_LPUART_IsActiveFlag_TXE(LPUART1))
 		;
 	LL_LPUART_TransmitData8(LPUART1, value[0]);
 	dataTx = false;
 }
 
-__STATIC_INLINE void UART_TransmitData16(uint8_t *value) {
+__STATIC_INLINE void UART_TransmitData16(int8_t *value) {
 	while (!LL_LPUART_IsActiveFlag_TXE(LPUART1))
 		;
 	LL_LPUART_TransmitData8(LPUART1, value[0]);
@@ -38,8 +38,8 @@ __STATIC_INLINE void UART_TransmitData16(uint8_t *value) {
 	dataTx = false;
 }
 
-__STATIC_INLINE void UART_TransmitData32(uint8_t *value) {
-	HAL_UART_Transmit_DMA(&hlpuart1, value, PDSP_CODEC_BUFFOR_LENGTH);
+__STATIC_INLINE void UART_TransmitData32(int8_t *value) {
+	HAL_UART_Transmit_DMA(&hlpuart1, (uint8_t *)value, PDSP_CODEC_BUFFOR_LENGTH);
 }
 
 __STATIC_INLINE void DAC_TransmitDataMono8(void) {
@@ -76,7 +76,7 @@ __STATIC_INLINE void DAC_TransmitDataStereo16(void) {
 static void TIM6_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	// Odbieranie danych z UART via DMA - niezależne od liczby kanałów i długości - potwierdzenie w CallbackRx
 	if ((PDSP_INPUT & PDSP_IN_UART) == PDSP_IN_UART)
-		HAL_UART_Receive_DMA(&hlpuart1, valueUartBuffRx, PDSP_CODEC_BUFFOR_LENGTH);
+		HAL_UART_Receive_DMA(&hlpuart1, (uint8_t *)valueUartBuffRx, PDSP_CODEC_BUFFOR_LENGTH);
 	// Odbieranie danych z ADC - dla stereo skopiowanie do drugiego kanału, uwzględnienie składowej stałej
 	if ((PDSP_INPUT & PDSP_IN_ADC_MIC) == PDSP_IN_ADC_MIC) {	// from ADC
 		pValueUartBuffRx[LEFT] = LL_ADC_REG_ReadConversionData12(ADC1);

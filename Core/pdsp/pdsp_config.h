@@ -7,14 +7,14 @@ extern "C" {
 
 /* Public constants ---------------------------------------------------------*/
 // Do wyboru jedna z lini konfigurującej tryb pracy:
-#define PDSP_MODE             PDSP_MODE_POLL
-//#define PDSP_MODE               PDSP_MODE_INT
+//#define PDSP_MODE             PDSP_MODE_POLL
+#define PDSP_MODE               PDSP_MODE_INT
 //#define PDSP_MODE             PDSP_MODE_INT_FRAME
 //#define PDSP_MODE             PDSP_MODE_DMA_FRAME
 
 // Do wyboru jedna z lini konfigurującej liczbę kanałów:
-#define PDSP_NUM_CHANNELS       1
-//#define PDSP_NUM_CHANNELS     2
+//#define PDSP_NUM_CHANNELS       1
+#define PDSP_NUM_CHANNELS     2
 
 // Do wyboru jedna z lini konfigurującej rozmiar próbki w bajtach
 #define PDSP_SAMPLE_SIZE		1
@@ -29,6 +29,8 @@ extern "C" {
 #define PDSP_OUTPUT			(PDSP_OUT_UART | PDSP_OUT_DAC)
 //#define PDSP_OUTPUT				PDSP_OUT_UART
 //#define PDSP_OUTPUT				PDSP_OUT_DAC
+//#define PDSP_OUTPUT				PDSP_OUT_NONE
+
 
 // Do wyboru jedna z lini konfigurującej częstotliwość próbkowania
 //#define PDSP_FS          		FREQ_96_KHz    // 6713 DSK at 96kHz sample rate
@@ -45,7 +47,7 @@ extern "C" {
 //#define PDSP_BUFFOR           PDSP_BUFFOR_TRIPLE
 
 // Konfiguracja domyślnego rozmiaru bufora
-#define PDSP_BUFFER_DEFAULT_SIZE   	    64
+#define PDSP_BUFFER_DEFAULT_SIZE   	    8
 
 // Konfiguracja parametrów kodeka (przetworników ADC/DAC)
 #define PDSP_CODEC_Vpp                   3.3f	//

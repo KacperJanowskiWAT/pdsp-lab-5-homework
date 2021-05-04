@@ -51,32 +51,28 @@ enum {
 /* ----------------------------------------------------------------------------
  * Definicja typów do przechowywania wartości próbek
  * --------------------------------------------------------------------------*/
+typedef union {
 #if (PDSP_SAMPLE_SIZE == 1)
 #if PDSP_NUM_CHANNELS == 1
-typedef union {
 	uint8_t uint;
-	int8_t channel[PDSP_CHANNELS_NUM_MONO];
-} CODEC_Data;
-//#endif
+	int8_t channel[PDSP_NUM_CHANNELS];
+	uint8_t tmp[3];
 #elif PDSP_NUM_CHANNELS == 2
-typedef union {
 	uint16_t uint;
 	int8_t channel[PDSP_NUM_CHANNELS];
-} CODEC_Data;
+	uint8_t tmp[2];
 #endif
 #else
 #if (PDSP_NUM_CHANNELS == 1)
-typedef union {
 	uint16_t uint;
 	int16_t channel[PDSP_NUM_CHANNELS];
-} CODEC_Data;
+	uint8_t tmp[2];
 #elif (PDSP_NUM_CHANNELS == 2)
-typedef union {
 	uint32_t uint;
 	int16_t channel[PDSP_NUM_CHANNELS];
+#endif
+#endif
 } CODEC_Data;
-#endif
-#endif
 
 typedef struct {
 	float channel[PDSP_NUM_CHANNELS];
@@ -96,7 +92,7 @@ extern uint32_t CODEC_FS[];
 
 #define PDSP_CODEC_BUFFOR_LENGTH				PDSP_SAMPLE_SIZE * PDSP_NUM_CHANNELS
 #define PDSP_CODEC_OFFSET_ADC				   (PDSP_CODEC_Bres / 2)
-#define PDSP_CODEC_BAUDRATE			 (uint32_t)(CODEC_FS[PDSP_FS] * PDSP_CODEC_BUFFOR_LENGTH * 8.0f * 1.5f)
+#define PDSP_CODEC_BAUDRATE			 (uint32_t)(CODEC_FS[PDSP_FS] * PDSP_CODEC_BUFFOR_LENGTH * 8.0f * 2.0f)
 
 /* Określenie numeru kanalu */
 #define LEFT              	0
@@ -123,8 +119,8 @@ extern CODEC_Data DataSamples[];
 extern uint32_t SampleNumber;
 extern volatile bool DataNew, dataRx, dataTx;
 
-extern uint8_t valueUartBuffRx[PDSP_CODEC_BUFFOR_LENGTH];
-extern uint8_t valueUartBuffTx[PDSP_CODEC_BUFFOR_LENGTH];
+extern int8_t valueUartBuffRx[PDSP_CODEC_BUFFOR_LENGTH];
+extern int8_t valueUartBuffTx[PDSP_CODEC_BUFFOR_LENGTH];
 extern uint16_t *pValueUartBuffRx;
 extern uint16_t *pValueUartBuffTx;
 

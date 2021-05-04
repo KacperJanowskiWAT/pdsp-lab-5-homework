@@ -7,13 +7,13 @@ volatile bool DataNew = false;
 volatile bool dataRx = false;
 volatile bool dataTx = false;
 
-CODEC_Data DataIn, DataOut; // Zmienne do przechowywania próbek odebranej/wysyłanej
-CODEC_Data temp[4];
 CODEC_Data Samples[PDSP_BUFFER_DEFAULT_SIZE];     	// Bufor próbek
 uint32_t SampleNumber;
 
-uint8_t valueUartBuffRx[PDSP_CODEC_BUFFOR_LENGTH];
-uint8_t valueUartBuffTx[PDSP_CODEC_BUFFOR_LENGTH];
+CODEC_Data DataIn, DataOut; // Zmienne do przechowywania próbek odebranej/wysyłanej
+
+int8_t valueUartBuffRx[PDSP_CODEC_BUFFOR_LENGTH];
+int8_t valueUartBuffTx[PDSP_CODEC_BUFFOR_LENGTH];
 uint16_t *pValueUartBuffRx = (uint16_t*) valueUartBuffRx;
 uint16_t *pValueUartBuffTx = (uint16_t*) valueUartBuffTx;
 
