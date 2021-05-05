@@ -7,7 +7,6 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
-ADC_HandleTypeDef hadc2;
 DAC_HandleTypeDef hdac1;
 UART_HandleTypeDef hlpuart1;
 TIM_HandleTypeDef htim6;
@@ -21,114 +20,100 @@ uint32_t CODEC_FS[] = { 8000, 16000, 24000, 32000, 44000, 48000, 96000 };
 /* Private user code ---------------------------------------------------------*/
 void CODEC_IRQHandler(void);
 
-__STATIC_INLINE void UART_TransmitData8(int8_t *value) {
+__STATIC_INLINE void ADC_ReceiveData(ADC_TypeDef *ADCx) {
+	if (PDSP_SAMPLE_SIZE == 1) {
+		valueUartBuffRx[LEFT] = LL_ADC_REG_ReadConversionData8(ADCx);
+		if (PDSP_NUM_CHANNELS == PDSP_CHANNELS_NUM_STEREO)
+			valueUartBuffRx[RIGHT] = valueUartBuffRx[LEFT];
+	} else {
+		pValueUartBuffRx[LEFT] = LL_ADC_REG_ReadConversionData12(ADCx);
+		if (PDSP_NUM_CHANNELS == PDSP_CHANNELS_NUM_STEREO)
+			pValueUartBuffRx[RIGHT] = pValueUartBuffRx[LEFT];
+	}
+	dataRx = true;
+}
+
+__STATIC_INLINE void UART_ReceiveData(void) {
+	HAL_UART_Receive_DMA(&hlpuart1, (uint8_t*) valueUartBuffRx, PDSP_CODEC_BUFFOR_LENGTH);
+}
+
+__STATIC_INLINE void DAC_TransmitData8(void) {
+	if (PDSP_NUM_CHANNELS == PDSP_CHANNELS_NUM_MONO)
+		LL_DAC_ConvertData8RightAligned(DAC1, LL_DAC_CHANNEL_1, (valueUartBuffTx[LEFT] + (uint8_t) PDSP_CODEC_OFFSET_ADC));
+
+	else
+		LL_DAC_ConvertData8RightAligned(DAC1, LL_DAC_CHANNEL_1,
+				((valueUartBuffTx[LEFT] + valueUartBuffTx[RIGHT]) >> 1) + (uint8_t) PDSP_CODEC_OFFSET_ADC);
+
+	dataTx = false;
+}
+
+__STATIC_INLINE void DAC_TransmitData16(void) {
+	if (PDSP_NUM_CHANNELS == PDSP_CHANNELS_NUM_MONO)
+		LL_DAC_ConvertData12RightAligned(DAC1, LL_DAC_CHANNEL_1,
+				(pValueUartBuffTx[LEFT] + (uint16_t) PDSP_CODEC_OFFSET_ADC));
+	else
+		LL_DAC_ConvertData12RightAligned(DAC1, LL_DAC_CHANNEL_1,
+				((pValueUartBuffTx[LEFT] + pValueUartBuffTx[RIGHT]) >> 1) + (uint16_t) PDSP_CODEC_OFFSET_ADC);
+
+	dataTx = false;
+}
+
+__STATIC_INLINE void UART_TransmitData(int8_t value) {
 	while (!LL_LPUART_IsActiveFlag_TXE(LPUART1))
 		;
-	LL_LPUART_TransmitData8(LPUART1, value[0]);
+	LL_LPUART_TransmitData8(LPUART1, value);
+}
+
+__STATIC_INLINE void UART_TransmitData8(void) {
+	UART_TransmitData(valueUartBuffTx[LEFT]);
+	if (PDSP_NUM_CHANNELS == PDSP_CHANNELS_NUM_STEREO)
+		UART_TransmitData(valueUartBuffTx[RIGHT]);
+
 	dataTx = false;
 }
 
-__STATIC_INLINE void UART_TransmitData16(int8_t *value) {
-	while (!LL_LPUART_IsActiveFlag_TXE(LPUART1))
-		;
-	LL_LPUART_TransmitData8(LPUART1, value[0]);
-	while (!LL_LPUART_IsActiveFlag_TXE(LPUART1))
-		;
-	LL_LPUART_TransmitData8(LPUART1, value[1]);
+__STATIC_INLINE void UART_TransmitData16(void) {
+	if (PDSP_NUM_CHANNELS == PDSP_CHANNELS_NUM_MONO) {
+		UART_TransmitData(valueUartBuffTx[0]);
+		UART_TransmitData(valueUartBuffTx[1]);
+	} else {
+		HAL_UART_Transmit_DMA(&hlpuart1, (uint8_t*) valueUartBuffTx, PDSP_CODEC_BUFFOR_LENGTH);
+	}
 	dataTx = false;
 }
-
-__STATIC_INLINE void UART_TransmitData32(int8_t *value) {
-	HAL_UART_Transmit_DMA(&hlpuart1, (uint8_t *)value, PDSP_CODEC_BUFFOR_LENGTH);
-}
-
-__STATIC_INLINE void DAC_TransmitDataMono8(void) {
-	LL_DAC_ConvertData8RightAligned(DAC1, LL_DAC_CHANNEL_1, (valueUartBuffTx[0] + (uint8_t) PDSP_CODEC_OFFSET_ADC));
-	LL_DAC_TrigSWConversion(DAC1, LL_DAC_CHANNEL_1);
-	dataTx = false;
-}
-
-__STATIC_INLINE void DAC_TransmitDataMono16(void) {
-	LL_DAC_ConvertData12RightAligned(DAC1, LL_DAC_CHANNEL_1, (pValueUartBuffTx[0] + (uint16_t) PDSP_CODEC_OFFSET_ADC));
-	LL_DAC_TrigSWConversion(DAC1, LL_DAC_CHANNEL_1);
-	dataTx = false;
-}
-
-__STATIC_INLINE void DAC_TransmitDataStereo8(void) {
-	LL_DAC_ConvertData8RightAligned(DAC1, LL_DAC_CHANNEL_1,
-			((valueUartBuffTx[LEFT] + valueUartBuffTx[RIGHT]) >> 1) + (uint8_t) PDSP_CODEC_OFFSET_ADC);
-	LL_DAC_TrigSWConversion(DAC1, LL_DAC_CHANNEL_1);
-	dataTx = false;
-}
-
-__STATIC_INLINE void DAC_TransmitDataStereo16(void) {
-	LL_DAC_ConvertData12RightAligned(DAC1, LL_DAC_CHANNEL_1,
-			((pValueUartBuffTx[LEFT] + pValueUartBuffTx[RIGHT]) >> 1) + (uint16_t) PDSP_CODEC_OFFSET_ADC);
-	LL_DAC_TrigSWConversion(DAC1, LL_DAC_CHANNEL_1);
-	dataTx = false;
-}
-
 /*---------------------------------------------------------------------------
  * Funkcje konfigurujące emulacje kodeka - TIM6, LPUART1, ADC1, DAC1
  *-------------------------------------------------------------------------*/
 
 // Emulacja za pomocą licznika przerwania od kodeka audio z częstotliwością Fs
-static void TIM6_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+__STATIC_INLINE void TIM6_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	// Odbieranie danych z UART via DMA - niezależne od liczby kanałów i długości - potwierdzenie w CallbackRx
 	if ((PDSP_INPUT & PDSP_IN_UART) == PDSP_IN_UART)
-		HAL_UART_Receive_DMA(&hlpuart1, (uint8_t *)valueUartBuffRx, PDSP_CODEC_BUFFOR_LENGTH);
+		UART_ReceiveData();
 	// Odbieranie danych z ADC - dla stereo skopiowanie do drugiego kanału, uwzględnienie składowej stałej
-	if ((PDSP_INPUT & PDSP_IN_ADC_MIC) == PDSP_IN_ADC_MIC) {	// from ADC
-		pValueUartBuffRx[LEFT] = LL_ADC_REG_ReadConversionData12(ADC1);
-		dataRx = true;
-		if (PDSP_NUM_CHANNELS == PDSP_CHANNELS_NUM_STEREO)
-			pValueUartBuffRx[RIGHT] = pValueUartBuffRx[LEFT];
+	if ((PDSP_INPUT & PDSP_IN_ADC_MIC) == PDSP_IN_ADC_MIC)
+		ADC_ReceiveData(ADC1);
 
-	}
 	/* Wysyłanie danych -----------------------------------------------------------------------------------------*/
-	if (PDSP_NUM_CHANNELS == PDSP_CHANNELS_NUM_MONO) {
-		if (PDSP_SAMPLE_SIZE == 1) {
-			if ((PDSP_OUTPUT & PDSP_OUT_UART) == PDSP_OUT_UART)
-				UART_TransmitData8(valueUartBuffTx);
-			if ((PDSP_OUTPUT & PDSP_OUT_DAC) == PDSP_OUT_DAC)
-				DAC_TransmitDataMono8();
-		} else {		// PDSP_SAMPLE_SIZE == 2
-			if ((PDSP_OUTPUT & PDSP_OUT_UART) == PDSP_OUT_UART)
-				UART_TransmitData16(valueUartBuffTx);
-			if ((PDSP_OUTPUT & PDSP_OUT_DAC) == PDSP_OUT_DAC)
-				DAC_TransmitDataMono16();
-		}
-	} else {	// PDSP_CHANNELS_NUM_STEREO
-		if (PDSP_SAMPLE_SIZE == 1) {
-			if ((PDSP_OUTPUT & PDSP_OUT_UART) == PDSP_OUT_UART)
-				UART_TransmitData16(valueUartBuffTx);
-			if ((PDSP_OUTPUT & PDSP_OUT_DAC) == PDSP_OUT_DAC)
-				DAC_TransmitDataStereo8();
-
-		} else {
-			if ((PDSP_OUTPUT & PDSP_OUT_UART) == PDSP_OUT_UART)
-				UART_TransmitData32(valueUartBuffTx);
-			if ((PDSP_OUTPUT & PDSP_OUT_DAC) == PDSP_OUT_DAC)
-				DAC_TransmitDataStereo16();
-		}
-	}
+	if ((PDSP_OUTPUT & PDSP_OUT_UART) == PDSP_OUT_UART)
+		(PDSP_SAMPLE_SIZE == 1) ? UART_TransmitData8() : UART_TransmitData16();
+	if ((PDSP_OUTPUT & PDSP_OUT_DAC) == PDSP_OUT_DAC)
+		(PDSP_SAMPLE_SIZE == 1) ? DAC_TransmitData8() : DAC_TransmitData16();
 
 	if (PDSP_MODE != PDSP_MODE_POLL) 					// Work in INT mode
 		CODEC_IRQHandler();
-
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
-	if (huart->Instance == LPUART1)
-	{
+	if (huart->Instance == LPUART1) {
 		dataTx = false;
 		AD_Toggle(0);
 	}
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-	if (huart->Instance == LPUART1)
-	{
+	if (huart->Instance == LPUART1) {
 		dataRx = true;
 		AD_Toggle(1);
 	}
@@ -217,7 +202,7 @@ void CODEC_InitOut(void) {
 	DAC_ChannelConfTypeDef sConfig = { 0 };
 	/* DAC channel OUT1 config	 */
 	sConfig.DAC_SampleAndHold = DAC_SAMPLEANDHOLD_DISABLE;
-	sConfig.DAC_Trigger = DAC_TRIGGER_SOFTWARE;
+	sConfig.DAC_Trigger = DAC_TRIGGER_T6_TRGO;
 	sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
 	sConfig.DAC_ConnectOnChipPeripheral = DAC_CHIPCONNECT_DISABLE;
 	sConfig.DAC_UserTrimming = DAC_TRIMMING_FACTORY;
@@ -268,7 +253,7 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *tim_baseHandle) {
 		/* TIM6 clock enable */
 		__HAL_RCC_TIM6_CLK_ENABLE();
 		/* TIM6 interrupt Init */
-		HAL_NVIC_SetPriority(TIM6_DAC_IRQn, 0, 0);
+		HAL_NVIC_SetPriority(TIM6_DAC_IRQn, 14, 0);
 		HAL_NVIC_EnableIRQ(TIM6_DAC_IRQn);
 	}
 }

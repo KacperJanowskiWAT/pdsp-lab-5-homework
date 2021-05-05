@@ -13,8 +13,8 @@ extern "C" {
 //#define PDSP_MODE             PDSP_MODE_DMA_FRAME
 
 // Do wyboru jedna z lini konfigurującej liczbę kanałów:
-//#define PDSP_NUM_CHANNELS       1
-#define PDSP_NUM_CHANNELS     2
+#define PDSP_NUM_CHANNELS       1
+//#define PDSP_NUM_CHANNELS     2
 
 // Do wyboru jedna z lini konfigurującej rozmiar próbki w bajtach
 #define PDSP_SAMPLE_SIZE		1
@@ -38,8 +38,8 @@ extern "C" {
 //#define PDSP_FS          		FREQ_44_KHz    // 6713 DSK at 44kHz sample rate
 //#define PDSP_FS          		FREQ_32_KHz    // 6713 DSK at 32kHz sample rate
 //#define PDSP_FS          		FREQ_24_KHz    // 6713 DSK at 24kHz sample rate
-//#define PDSP_FS          		FREQ_16_KHz    // 6713 DSK at 16kHz sample rate
-#define PDSP_FS          		FREQ_8_KHz     // 6713 DSK at 8kHz sample rate
+#define PDSP_FS          		FREQ_16_KHz    // 6713 DSK at 16kHz sample rate
+//#define PDSP_FS          		FREQ_8_KHz     // 6713 DSK at 8kHz sample rate
 
 // Do wyboru jedna z lini konfigurującej typ bufora
 #define PDSP_BUFFOR             PDSP_BUFFOR_SINGLE
