@@ -36,11 +36,16 @@ void PDSP_Init(void) {
 	RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
 	RCC_PeriphCLKInitTypeDef PeriphClkInit = { 0 };
 
+	/** Configure LSE Drive Capability	  */
+	  HAL_PWR_EnableBkUpAccess();
+	  __HAL_RCC_LSEDRIVE_CONFIG(RCC_LSEDRIVE_LOW);
+
 	/** Initializes the RCC Oscillators according to the specified parameters in the RCC_OscInitTypeDef structure. */
-	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_MSI;
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSE|RCC_OSCILLATORTYPE_MSI;
+    RCC_OscInitStruct.LSEState = RCC_LSE_ON;
 	RCC_OscInitStruct.MSIState = RCC_MSI_ON;
-	RCC_OscInitStruct.MSICalibrationValue = 0;
 	RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
+	RCC_OscInitStruct.MSICalibrationValue = RCC_MSICALIBRATION_DEFAULT;
 	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
 	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_MSI;
 	RCC_OscInitStruct.PLL.PLLM = 1;
@@ -70,6 +75,9 @@ void PDSP_Init(void) {
 	/** Configure the main internal regulator output voltage */
 	if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK)
 		Error_Handler();
+
+	  /** Enable MSI Auto calibration  */
+	  HAL_RCCEx_EnableMSIPLLMode();
 
 	/* GPIO Ports Clock Enable */
 	__HAL_RCC_GPIOA_CLK_ENABLE();
@@ -101,10 +109,10 @@ void PDSP_CODEC_Init() {
 
 	/* DMA interrupt init for LPUART*/
 	/* DMA2_Channel6_IRQn interrupt configuration */
-	HAL_NVIC_SetPriority(DMA2_Channel6_IRQn, 0, 0);
+	HAL_NVIC_SetPriority(DMA2_Channel6_IRQn, 15, 0);
 	HAL_NVIC_EnableIRQ(DMA2_Channel6_IRQn);
 	/* DMA2_Channel7_IRQn interrupt configuration */
-	HAL_NVIC_SetPriority(DMA2_Channel7_IRQn, 0, 0);
+	HAL_NVIC_SetPriority(DMA2_Channel7_IRQn, 15, 0);
 	HAL_NVIC_EnableIRQ(DMA2_Channel7_IRQn);
 
 	/* Global interrupt enable */
@@ -121,6 +129,7 @@ CODEC_Data CODEC_GetSample(void) {
 		while (!dataRx)
 			;
 	}
+
 	if (PDSP_SAMPLE_SIZE == 1) {
 		sample.channel[LEFT] = valueUartBuffRx[LEFT];
 		if (PDSP_NUM_CHANNELS == PDSP_CHANNELS_NUM_STEREO)
