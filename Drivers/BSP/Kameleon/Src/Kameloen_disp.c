@@ -34,7 +34,7 @@ TIM_HandleTypeDef htim2;
 uint16_t display[DIG_Num];
 
 const uint8_t segments[] = {
-SEG_A_Pin | SEG_B_Pin | SEG_C_Pin | SEG_D_Pin | SEG_E_Pin | SEG_F_Pin,	// 0
+		SEG_A_Pin | SEG_B_Pin | SEG_C_Pin | SEG_D_Pin | SEG_E_Pin | SEG_F_Pin,	// 0
 		SEG_B_Pin | SEG_C_Pin,	// 1
 		SEG_A_Pin | SEG_B_Pin | SEG_D_Pin | SEG_E_Pin | SEG_G_Pin,	// 2
 		SEG_A_Pin | SEG_B_Pin | SEG_C_Pin | SEG_D_Pin | SEG_G_Pin,	// 3
@@ -97,11 +97,11 @@ void BSP_SEG_Init(void) {
 }
 
 uint32_t BSP_SEG_Display(int16_t value) {
-	if ((value > 10000) || (value < -999)) {
-		display[3] = segments['E' - 54];
-		display[2] = segments['R' - 54];
-		display[1] = segments[34];
-		display[0] = segments[34];
+	if ((value >= 10000) || (value < -999)) {
+		display[3] = segments[20];
+		display[2] = segments[20];
+		display[1] = segments[20];
+		display[0] = segments[20];
 		return 1;
 	} else {
 		if (value >= 0) {
