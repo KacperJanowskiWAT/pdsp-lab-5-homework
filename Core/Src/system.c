@@ -5,16 +5,13 @@
  *      Author: pdabal
  */
 
-#include "Kameleon.h"
-
-#include "stm32l4xx.h"
-#include "stm32l4xx_ll_lpuart.h"
+#include "main.h"
 
 int __io_putchar(int ch) {
 
 	while (!LL_LPUART_IsActiveFlag_TXE(LPUART1))
 		;
-	LL_LPUART_TransmitData8(LPUART1, (uint8_t)ch);
+	LL_LPUART_TransmitData8(LPUART1, (uint8_t) ch);
 	return ch;
 }
 
@@ -29,7 +26,7 @@ int __io_getchar(void) {
 	/* Echo */
 	while (!LL_LPUART_IsActiveFlag_TXE(LPUART1))
 		;
-	LL_LPUART_TransmitData8(LPUART1, (uint8_t)ch);
+	LL_LPUART_TransmitData8(LPUART1, (uint8_t) ch);
 
 	return ch;
 }
@@ -40,23 +37,27 @@ int __io_getchar(void) {
  * @retval None
  */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-	switch (GPIO_Pin) {
-	case JOY_RIGHT_EXTI_LINE:
-	case JOY_LEFT_EXTI_LINE:
-	case JOY_DOWN_EXTI_LINE:
-	case JOY_UP_EXTI_LINE:
-	case JOY_OK_EXTI_LINE:
-		BSP_JOY_Callback(GPIO_Pin);
-		break;
-	default:
-		break;
-	}
+	MENU_Operation(hMenu, GPIO_Pin);
+	BSP_JOY_Callback(GPIO_Pin);
+	AD_Toggle(13);
 }
 
 void HAL_SYSTICK_Callback(void) {
+	static uint32_t timer = 0;
+
+	AD_On(15);
+	timer++;
 	BSP_SEG_Callback();
-	JOY_StateUpdate();
+	if ((timer % 20) == 0) {
+		JOY_StateUpdate();
+	}
+	if (timer == 59) {
+		MENU_Value(hMenu);
+		timer = 0;
+	}
+	AD_Off(15);
 }
+
 
 /**
  * @brief  This function is executed in case of error occurrence.

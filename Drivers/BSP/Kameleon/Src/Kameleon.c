@@ -22,9 +22,6 @@
 #define JOY_UP_Pin GPIO_PIN_3
 #define JOY_UP_GPIO_Port GPIOE
 
-#define ESP8266_PD_Pin GPIO_PIN_11
-#define ESP8266_PD_GPIO_Port GPIOF
-
 #define JOY_OK_Pin GPIO_PIN_15
 #define JOY_OK_GPIO_Port GPIOE
 

@@ -61,6 +61,8 @@ void BSP_TEMP_LM75_Init(void);
 int8_t BSP_TEMP_LM75_Read(void);
 
 /*----------------------------------------------------------------------------------*/
+#define BSP_POT_Bres               4096.0f
+
 /* Initialize potentiometer.
  * The function should be called before using any other potentiometer function.
  * It initializes GPIO line and ADC (ADC3 is used for potentiometer). */

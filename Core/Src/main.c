@@ -25,6 +25,8 @@
 int main(void) {
 	PDSP_Init();
 
+	MENU_Init(hMenu);
+
 	while (1) {
 		AD_On(DEBUG_MAIN_LOOP_IO);
 		if (PDSP_MODE == PDSP_MODE_POLL) {

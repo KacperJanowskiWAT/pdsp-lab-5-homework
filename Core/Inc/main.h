@@ -31,6 +31,9 @@ extern "C" {
 #include "stm32l4xx_hal.h"
 #include "arm_math.h"
 #include "Kameleon.h"
+#include "Controller.h"
+
+#include "string.h"
 
 /* Private includes ----------------------------------------------------------*/
 
