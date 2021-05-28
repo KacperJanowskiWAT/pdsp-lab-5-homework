@@ -34,7 +34,7 @@ TIM_HandleTypeDef htim2;
 uint16_t display[DIG_Num];
 
 const uint8_t segments[] = {
-		SEG_A_Pin | SEG_B_Pin | SEG_C_Pin | SEG_D_Pin | SEG_E_Pin | SEG_F_Pin,	// 0
+SEG_A_Pin | SEG_B_Pin | SEG_C_Pin | SEG_D_Pin | SEG_E_Pin | SEG_F_Pin,	// 0
 		SEG_B_Pin | SEG_C_Pin,	// 1
 		SEG_A_Pin | SEG_B_Pin | SEG_D_Pin | SEG_E_Pin | SEG_G_Pin,	// 2
 		SEG_A_Pin | SEG_B_Pin | SEG_C_Pin | SEG_D_Pin | SEG_G_Pin,	// 3
@@ -191,85 +191,103 @@ typedef struct {
 #define LCD_DATA_GPIOD_MSK	(LCD_D0_Pin | LCD_D1_Pin | LCD_D2_Pin | LCD_D3_Pin)
 #define LCD_DATA_GPIOE_MSK	(LCD_D4_Pin | LCD_D5_Pin | LCD_D6_Pin | LCD_D7_Pin)
 
+#define LCD_Pins			11
+
 /* Private macro -------------------------------------------------------------*/
+#define	LCD_E_HIGH()		LL_GPIO_SetOutputPin(LCD_E_GPIO_Port, LCD_E_Pin)
+#define	LCD_E_LOW()			LL_GPIO_ResetOutputPin(LCD_E_GPIO_Port, LCD_E_Pin)
+#define	LCD_RS_HIGH()		LL_GPIO_SetOutputPin(LCD_RS_GPIO_Port, LCD_RS_Pin)
+#define	LCD_RS_LOW()		LL_GPIO_ResetOutputPin(LCD_RS_GPIO_Port, LCD_RS_Pin)
+
+#define	LCD_RW_HIGH()		LL_GPIO_SetOutputPin(LCD_RW_GPIO_Port, LCD_RW_Pin)
+#define	LCD_RW_LOW()		LL_GPIO_ResetOutputPin(LCD_RW_GPIO_Port, LCD_RW_Pin)
+
 /* Private variables ---------------------------------------------------------*/
-LCD_IO_TypeDef LCD_Defs[8] = { { LCD_D0_GPIO_Port, LCD_D0_Pin }, { LCD_D1_GPIO_Port, LCD_D1_Pin }, { LCD_D2_GPIO_Port,
+TIM_HandleTypeDef htim15;
+
+LCD_IO_TypeDef LCD_Defs[] = { { LCD_D0_GPIO_Port, LCD_D0_Pin }, { LCD_D1_GPIO_Port, LCD_D1_Pin }, { LCD_D2_GPIO_Port,
 LCD_D2_Pin }, { LCD_D3_GPIO_Port, LCD_D3_Pin }, { LCD_D4_GPIO_Port, LCD_D4_Pin }, { LCD_D5_GPIO_Port, LCD_D5_Pin }, {
-		LCD_D6_GPIO_Port, LCD_D6_Pin }, { LCD_D7_GPIO_Port, LCD_D7_Pin } };
+LCD_D6_GPIO_Port, LCD_D6_Pin }, { LCD_D7_GPIO_Port, LCD_D7_Pin }, { LCD_E_GPIO_Port, LCD_E_Pin }, { LCD_RW_GPIO_Port,
+LCD_RW_Pin }, { LCD_RS_GPIO_Port, LCD_RS_Pin } };
+
+int8_t LCD_UserChar[] = {
+		0x04, 0x0E, 0x0E, 0x0E, 0x0E, 0x1F, 0x04, 0x00,
+		0x00, 0x01, 0x03, 0x16, 0x1C, 0x08, 0x00, 0x00,	// Checked
+		0x00, 0x1B, 0x0E, 0x04, 0x0E, 0x1B, 0x00, 0x00	// Uncheckd
+		};
+
 
 /* Private function prototypes -----------------------------------------------*/
+static void LCD_GPIO_DataOut(void);
+static void LCD_GPIO_DataIn(void);
+static uint8_t LCD_ReadStatus(void);
+
 /* Private user code ---------------------------------------------------------*/
 static void LCD_Write(uint8_t data) {
-	LL_GPIO_ResetOutputPin(LCD_RW_GPIO_Port, LCD_RW_Pin);
+	LCD_GPIO_DataOut();
 
+	LCD_RW_LOW();
+	LCD_E_HIGH();
 	for (uint32_t i = 0; i < 8; ++i)
 		if ((data >> i) & 1)
 			LL_GPIO_SetOutputPin(LCD_Defs[i].port, LCD_Defs[i].pin);
 		else
 			LL_GPIO_ResetOutputPin(LCD_Defs[i].port, LCD_Defs[i].pin);
+	LCD_E_LOW();
 
-	LL_GPIO_SetOutputPin(LCD_E_GPIO_Port, LCD_E_Pin);
-	HAL_Delay(2);
-	LL_GPIO_ResetOutputPin(LCD_E_GPIO_Port, LCD_E_Pin);
-	HAL_Delay(2);
+	while(LCD_ReadStatus() & 0x80);
 }
 
 static uint8_t LCD_Read(void) {
 	uint8_t data;
 
-	LL_GPIO_SetOutputPin(LCD_RW_GPIO_Port, LCD_RW_Pin);
-	HAL_Delay(2);
-	LL_GPIO_SetOutputPin(LCD_E_GPIO_Port, LCD_E_Pin);
+	LCD_GPIO_DataIn();
 
+	LCD_RW_HIGH();
+	LCD_E_HIGH();
 	for (uint32_t i = 0; i < 8; ++i) {
 		data |= ((uint8_t) HAL_GPIO_ReadPin(LCD_Defs[i].port, LCD_Defs[i].pin) << i);
 	}
-	LL_GPIO_ResetOutputPin(LCD_E_GPIO_Port, LCD_E_Pin);
+	LCD_E_LOW();
 	return data;
 }
 
 static uint8_t LCD_ReadStatus(void) {
 	unsigned char status = 0;
-	GPIO_InitTypeDef GPIO_InitStruct;
 
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
-
-	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-	GPIO_InitStruct.Pull = GPIO_PULLUP;
-
-	GPIO_InitStruct.Pin = LCD_D0_Pin | LCD_D1_Pin | LCD_D2_Pin | LCD_D3_Pin;
-	HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-	GPIO_InitStruct.Pin = LCD_D4_Pin | LCD_D5_Pin | LCD_D6_Pin | LCD_D7_Pin;
-	HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-
-	LL_GPIO_SetOutputPin(LCD_RW_GPIO_Port, LCD_RW_Pin);
-	LL_GPIO_ResetOutputPin(LCD_RS_GPIO_Port, LCD_RS_Pin);
+	LCD_RW_HIGH();
+	LCD_RS_LOW();
 
 	status = LCD_Read();
 
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-
-	GPIO_InitStruct.Pin = LCD_D0_Pin | LCD_D1_Pin | LCD_D2_Pin | LCD_D3_Pin;
-	HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-	GPIO_InitStruct.Pin = LCD_D4_Pin | LCD_D5_Pin | LCD_D6_Pin | LCD_D7_Pin;
-	HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-
 	return status;
 }
+
 /* Send command to LCD module */
 static void LCD_Cmd(unsigned char cmd) {
-	LL_GPIO_ResetOutputPin(LCD_RS_GPIO_Port, LCD_RS_Pin);
+	LCD_RS_LOW();
 	LCD_Write(cmd);
 }
 
 /* Send data to LCD module */
 static void LCD_Data(uint8_t data) {
-	LL_GPIO_SetOutputPin(LCD_RS_GPIO_Port, LCD_RS_Pin);
+	LCD_RS_HIGH();
 	LCD_Write(data);
 }
 
-static void GPIO_Init(void) {
+static void LCD_GPIO_DataOut(void) {
+	for (uint32_t i = 0; i < 8; i++) {
+		LL_GPIO_SetPinMode(LCD_Defs[i].port, LCD_Defs[i].pin, LL_GPIO_MODE_OUTPUT);
+	}
+}
+
+static void LCD_GPIO_DataIn(void) {
+	for (uint32_t i = 0; i < 8; i++) {
+		LL_GPIO_SetPinMode(LCD_Defs[i].port, LCD_Defs[i].pin, LL_GPIO_MODE_INPUT);
+	}
+}
+
+static void LCD_GPIO_Init(void) {
 	GPIO_InitTypeDef GPIO_InitStruct;
 
 	/* GPIO Ports Clock Enable */
@@ -281,56 +299,88 @@ static void GPIO_Init(void) {
 	__HAL_RCC_GPIOF_CLK_ENABLE();
 
 	/*Configure GPIO pin Output Level */
-	LL_GPIO_ResetOutputPin(LCD_RS_GPIO_Port, LCD_RS_Pin);
-	/*Configure GPIO pin Output Level */
-	LL_GPIO_ResetOutputPin(GPIOE, LCD_D4_Pin | LCD_D5_Pin | LCD_D6_Pin | LCD_D7_Pin);
-	/*Configure GPIO pin Output Level */
-	LL_GPIO_ResetOutputPin(LCD_BKL_GPIO_Port, LCD_BKL_Pin);
-	/*Configure GPIO pin Output Level */
-	LL_GPIO_ResetOutputPin(GPIOD, LCD_D0_Pin | LCD_D1_Pin | LCD_D2_Pin | LCD_D3_Pin | LCD_RW_Pin | LCD_E_Pin);
+	for (uint32_t i = 0; i < LCD_Pins; i++) {
+		LL_GPIO_ResetOutputPin(LCD_Defs[i].port, LCD_Defs[i].pin);
+		LL_GPIO_SetPinMode(LCD_Defs[i].port, LCD_Defs[i].pin, LL_GPIO_MODE_OUTPUT);
+		LL_GPIO_SetPinPull(LCD_Defs[i].port, LCD_Defs[i].pin, LL_GPIO_PULL_NO);
+		LL_GPIO_SetPinSpeed(LCD_Defs[i].port, LCD_Defs[i].pin, LL_GPIO_SPEED_FREQ_LOW);
+	}
 
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
-
-	/*Configure GPIO pin : LCD_RS_Pin */
-	GPIO_InitStruct.Pin = LCD_RS_Pin;
-	HAL_GPIO_Init(LCD_RS_GPIO_Port, &GPIO_InitStruct);
-	/*Configure GPIO pins : LCD_D4_Pin LCD_D5_Pin LCD_D6_Pin LCD_D7_Pin */
-	GPIO_InitStruct.Pin = LCD_D4_Pin | LCD_D5_Pin | LCD_D6_Pin | LCD_D7_Pin;
-	HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 	/*Configure GPIO pin : LCD_BKL_Pin */
-	GPIO_InitStruct.Pin = LCD_BKL_Pin;
-	HAL_GPIO_Init(LCD_BKL_GPIO_Port, &GPIO_InitStruct);
-	/*Configure GPIO pins : LCD_D0_Pin LCD_D1_Pin LCD_D2_Pin LCD_D3_Pin LCD_RW_Pin LCD_E_Pin */
-	GPIO_InitStruct.Pin = LCD_D0_Pin | LCD_D1_Pin | LCD_D2_Pin | LCD_D3_Pin | LCD_RW_Pin | LCD_E_Pin;
-	HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-}
-
-/* Activate Power Pin that supplies LCD module */
-void BSP_LCD_BacklightOn(void) {
-	LL_GPIO_SetOutputPin(LCD_BKL_GPIO_Port, LCD_BKL_Pin);
-}
-
-/* Disable Power Pin that supplies LCD module */
-void BSP_LCD_BacklightOff(void) {
 	LL_GPIO_ResetOutputPin(LCD_BKL_GPIO_Port, LCD_BKL_Pin);
+	GPIO_InitStruct.Pin = LCD_BKL_Pin;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+#if	(LCD_BKL_PWM == 1)
+	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+	GPIO_InitStruct.Alternate = GPIO_AF14_TIM15;
+#endif
+	HAL_GPIO_Init(LCD_BKL_GPIO_Port, &GPIO_InitStruct);
+
 }
 
-/* Clear LCD module display */
-void BSP_LCD_Clear(void) {
-	LCD_Cmd(HD44780_CLEAR);
-}
+#if	(LCD_BKL_PWM == 1)
+static void LCD_TIM15_Init(void) {
+	TIM_ClockConfigTypeDef sClockSourceConfig = { 0 };
+	TIM_MasterConfigTypeDef sMasterConfig = { 0 };
+	TIM_OC_InitTypeDef sConfigOC = { 0 };
+	TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = { 0 };
 
-/* Initializes HD44780 LCD module in 4-bit mode */
+	__HAL_RCC_TIM15_CLK_ENABLE();
+
+	htim15.Instance = TIM15;
+	htim15.Init.Prescaler = LCD_BKL_PRESCALER - 1;
+	htim15.Init.CounterMode = TIM_COUNTERMODE_UP;
+	htim15.Init.Period = LCD_BKL_PERIOD - 1;
+	htim15.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+	htim15.Init.RepetitionCounter = 0;
+	htim15.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+	HAL_TIM_Base_Init(&htim15);
+
+	sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+	HAL_TIM_ConfigClockSource(&htim15, &sClockSourceConfig);
+	HAL_TIM_PWM_Init(&htim15);
+
+	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+	HAL_TIMEx_MasterConfigSynchronization(&htim15, &sMasterConfig);
+
+	sConfigOC.OCMode = TIM_OCMODE_PWM1;
+	sConfigOC.Pulse = LCD_BKL_TRESHOLD - 1;
+	sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+	sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
+	sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+	sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
+	sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
+	HAL_TIM_PWM_ConfigChannel(&htim15, &sConfigOC, TIM_CHANNEL_1);
+	__HAL_TIM_DISABLE_OCxPRELOAD(&htim15, TIM_CHANNEL_1);
+
+	sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
+	sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
+	sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
+	sBreakDeadTimeConfig.DeadTime = 0;
+	sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
+	sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
+	sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
+	HAL_TIMEx_ConfigBreakDeadTime(&htim15, &sBreakDeadTimeConfig);
+}
+#endif
+
+/* Initializes HD44780 LCD module in 8-bit mode */
 void BSP_LCD_Init(void) {
-	GPIO_Init();
+	LCD_GPIO_Init();
+#if	(LCD_BKL_PWM == 1)
+	LCD_TIM15_Init();
+#endif
 
-	LL_GPIO_SetOutputPin(LCD_E_GPIO_Port, LCD_E_Pin);
-	LL_GPIO_ResetOutputPin(LCD_RS_GPIO_Port, LCD_RS_Pin);
-	HAL_Delay(40); 		//
-	LCD_Cmd(HD44780_FUNCTION_SET | HD44780_8_BIT);
+	LCD_E_LOW();
+	LCD_RS_LOW();
+	LCD_RW_LOW();
+
 	HAL_Delay(5); 		//
+	LCD_Cmd(HD44780_FUNCTION_SET | HD44780_8_BIT);
+	HAL_Delay(1); 		//
 	LCD_Cmd(HD44780_FUNCTION_SET | HD44780_8_BIT);
 	HAL_Delay(1); 		//
 	LCD_Cmd(HD44780_FUNCTION_SET | HD44780_8_BIT);
@@ -341,7 +391,46 @@ void BSP_LCD_Init(void) {
 	HAL_Delay(5);
 	LCD_Cmd(HD44780_ENTRY_MODE | HD44780_EM_SHIFT_CURSOR | HD44780_EM_INCREMENT);
 	LCD_Cmd(HD44780_DISPLAY_ONOFF | HD44780_DISPLAY_ON);
+
 	BSP_LCD_BacklightOn();
+	BSP_LCD_SetUserChar(0, 0, LCD_UserChar);
+}
+
+/* Activate Power Pin that supplies LCD module */
+void BSP_LCD_BacklightOn(void) {
+#if	(LCD_BKL_PWM == 1)
+	HAL_TIM_PWM_Start(&htim15, TIM_CHANNEL_1);
+	LL_TIM_CC_EnableChannel(TIM15, LL_TIM_CHANNEL_CH1N);
+	LL_TIM_OC_SetCompareCH1(TIM15, 0);
+#else
+	LL_GPIO_SetOutputPin(LCD_BKL_GPIO_Port, LCD_BKL_Pin);
+#endif
+}
+
+/* Disable Power Pin that supplies LCD module */
+void BSP_LCD_BacklightOff(void) {
+#if	(LCD_BKL_PWM == 1)
+	HAL_TIM_PWM_Stop(&htim15, TIM_CHANNEL_1);
+	LL_TIM_OC_SetCompareCH1(TIM15, 99);
+#else
+	LL_GPIO_ResetOutputPin(LCD_BKL_GPIO_Port, LCD_BKL_Pin);
+#endif
+}
+
+void BSP_LCD_BacklightSet(uint16_t value) {
+#if	(LCD_BKL_PWM == 1)
+	if (value > LCD_BKL_PERIOD)
+		value = LCD_BKL_PERIOD;
+	LL_TIM_OC_SetCompareCH1(TIM15, 100 - value);
+#else
+	if(value > LCD_BKL_TRESHOLD)
+	LL_GPIO_SetOutputPin(LCD_BKL_GPIO_Port, LCD_BKL_Pin);
+#endif
+}
+
+/* Clear LCD module display */
+void BSP_LCD_Clear(void) {
+	LCD_Cmd(HD44780_CLEAR);
 }
 
 /* Set Cursor to a specified location given by row and column information
@@ -363,35 +452,41 @@ void BSP_LCD_GoTo(uint8_t row, uint8_t column) {
 	}
 }
 
+/* Display a characters string */
+void BSP_LCD_WriteChar(uint8_t ch) {
+	LCD_Data(ch);
+}
+
+/* Display a characters string */
 void BSP_LCD_WriteText(uint8_t *text) {
 	while (*text)
 		LCD_Data(*text++);
 }
 
-/* Display a characters string */
-void BSP_LCD_WriteTextXY(uint8_t *text, uint8_t row, uint8_t col) {
-	BSP_LCD_GoTo(row, col);
+void BSP_LCD_WriteNumber(uint32_t number) {
+	uint8_t buffer[16];
+	uint8_t *text = buffer;
+	sprintf((char*) text, (const char*) "%d", (int) number);
 	while (*text) {
 		LCD_Data(*text++);
 	}
 }
 
-void BSP_LCD_WriteNumber(uint32_t number){
+void BSP_LCD_WriteNumberHex(uint32_t number) {
 	uint8_t buffer[16];
-	uint8_t * text = buffer;
-	sprintf((char*)text, (const char*)"%d", (int)number);
-	while (*text){
-			LCD_Data(*text++);
+	uint8_t *text = buffer;
+	sprintf((char*) text, (const char*) "0x%x", (int) number);
+	while (*text) {
+		LCD_Data(*text++);
 	}
 }
 
-void BSP_LCD_WriteNumberXY(uint32_t number, uint8_t row, uint8_t col){
+void BSP_LCD_WriteNumberFloat(float number, uint32_t digit, uint32_t fraction) {
 	uint8_t buffer[16];
-	uint8_t * text = buffer;
-	sprintf((char*)text, (const char*)"%d", (int)number);
-	BSP_LCD_GoTo(row, col);
-	while (*text){
-			LCD_Data(*text++);
+	uint8_t *text = buffer;
+	sprintf((char*) text, "%*.*f", (int) digit, (int) fraction, number);
+	while (*text) {
+		LCD_Data(*text++);
 	}
 }
 
@@ -409,8 +504,8 @@ void BSP_LCD_SetUserChar(int8_t charNum, uint8_t n, const int8_t *p) {
 	do {
 		LCD_Data(*p++);
 	} while (--n);
+	LCD_Cmd(HD44780_HOME);
 }
-
 
 void BSP_LCD_ShiftLeft(void) {
 	LCD_Cmd(HD44780_DISPLAY_CURSOR_SHIFT | HD44780_SHIFT_LEFT | HD44780_SHIFT_DISPLAY);
