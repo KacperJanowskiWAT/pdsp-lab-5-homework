@@ -33,6 +33,7 @@ extern "C" {
 #include "Kameleon.h"
 #include "Controller.h"
 
+#include "usb_device.h"
 #include "string.h"
 
 /* Private includes ----------------------------------------------------------*/

@@ -45,12 +45,12 @@ GPIO_PIN_3, GPIO_PIN_2, 0, 0, GPIO_PIN_3, GPIO_PIN_13, GPIO_PIN_12 };
 GPIO_TypeDef *AD_GPIO_PORT[] = {
 GPIOA, GPIOC, GPIOC, GPIOB, GPIOB, GPIOB, GPIOB, GPIOG, GPIOG, GPIOA, GPIOA, NULL, NULL, GPIOB, GPIOD, GPIOD };
 
-#define vCOM				LPUART1
-#define vCOM_RX_Pin 		GPIO_PIN_0
+#define COM				LPUART1
+#define COM_RX_Pin 		GPIO_PIN_0
 #define vCOM_RX_GPIO_Port 	GPIOC
-#define vCOM_TX_Pin 		GPIO_PIN_1
+#define COM_TX_Pin 		GPIO_PIN_1
 #define vCOM_TX_GPIO_Port 	GPIOC
-#define vCOM_IRQ_Prioryty	0
+#define COM_IRQ_Prioryty	15
 #define vCOM_Baudrate		115200
 
 UART_HandleTypeDef hlpuart1;
@@ -198,7 +198,7 @@ void BSP_COM_Init(uint32_t baudrate) {
 	__HAL_RCC_GPIOC_CLK_ENABLE();
 	/**LPUART1 GPIO Configuration: PC0     ------> LPUART1_RX, PC1     ------> LPUART1_TX	 */
 	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
-	GPIO_InitStruct.Pin = vCOM_TX_Pin | vCOM_RX_Pin;
+	GPIO_InitStruct.Pin = COM_TX_Pin | COM_RX_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -208,7 +208,7 @@ void BSP_COM_Init(uint32_t baudrate) {
 	/* Peripheral clock enable */
 	__HAL_RCC_LPUART1_CLK_ENABLE();
 
-	hlpuart1.Instance = vCOM;
+	hlpuart1.Instance = COM;
 	hlpuart1.Init.BaudRate = baudrate;
 	hlpuart1.Init.WordLength = UART_WORDLENGTH_8B;
 	hlpuart1.Init.StopBits = UART_STOPBITS_1;
@@ -221,7 +221,7 @@ void BSP_COM_Init(uint32_t baudrate) {
 		Error_HandlerData(__FILE__, __LINE__);
 
 	/* LPUART1 interrupt Init */
-	HAL_NVIC_SetPriority(LPUART1_IRQn, vCOM_IRQ_Prioryty, 0);
+	HAL_NVIC_SetPriority(LPUART1_IRQn, COM_IRQ_Prioryty, 0);
 	HAL_NVIC_EnableIRQ(LPUART1_IRQn);
 }
 

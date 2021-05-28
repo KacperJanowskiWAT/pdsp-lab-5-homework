@@ -16,6 +16,7 @@
 #include "stm32l4xx_ll_rcc.h"
 #include "stm32l4xx_ll_gpio.h"
 #include "stm32l4xx_ll_lpuart.h"
+#include "stm32l4xx_ll_tim.h"
 #include "stm32l4xx_ll_usart.h"
 
 #include "Kameleon_disp.h"
