@@ -8,155 +8,113 @@
 #include "main.h"
 #include "pdsp/pdsp.h"
 
-// 0-3 bits
-#define MENU_PARAMETER_MASK 0x0F
-#define MENU_PARAMETER_IS_NUMBER 1
-#define MENU_PARAMETER_IS_STRING 2
-// 4 - checkbox bit
-#define MENU_ITEM_IS_CHECKBOX		0x10
-// 5
-#define MENU_ITEM_IS_CHECKED		0x20
-// 6 - submenu bit
-#define MENU_CALLBACK_IS_SUBMENU	0x40
-// 7 - callback bit
-#define MENU_CALLBACK_IS_FUNCTION 	0x80
+extern Menu_t mGen;
+extern Menu_t mFilter;
+extern Menu_t mSound;
 
-// Number of items on one screen - not including title
-#define MENU_LINES 1
-// Symbol which is displayed in front of the selected item. This symbol doesn't appear when MENU_LINES == 1
-#define ARROW_SYMBOL ">"
-// How many spaces is between arrow symbol and menu item useful to set zero on smaller displays
-#define ARROW_GAP 1
+void MENU_Callback(void *m);
 
-// Clear display
-#define DisplayClear()					 BSP_LCD_Clear()
-#define DisplayClearLine(posx)			{BSP_LCD_GoTo(posx, 1); BSP_LCD_WriteText((uint8_t *)"                ");}
-// Display string
-#define DisplayString(str, posx, posy) 	{BSP_LCD_GoTo(posx, posy); BSP_LCD_WriteText((uint8_t *)str);}
-// Display number
-#define DisplayNumber(num, posx, posy) 	{BSP_LCD_GoTo(posx, posy); BSP_LCD_WriteNumber(num); }
-
-#define GEN_CONTROL_TYPE_NUM		4
-
-
-
-GenControl_t GenControl = { 0 };
-
-void callbackAmpl(void *m) {
+void MENU_Callback(void *m) {
 	Menu_t *menu = ((Menu_t*) m);
-	MenuItem_t *selectedItem = menu->items[menu->selectedIndex];
-
-	selectedItem->parameter = (uint32_t) ((PDSP_CODEC_Vpp / 0.002f / BSP_POT_Bres) * BSP_POT_Read());
-
-	GenControl.amplitude = (float) (selectedItem->parameter);
-}
-void callbackFreq(void *m) {
-	Menu_t *menu = ((Menu_t*) m);
-	MenuItem_t *selectedItem = menu->items[menu->selectedIndex];
-
-	selectedItem->parameter = (uint32_t) ((PDSP_CODEC_Fs / 2.0f / BSP_POT_Bres) * BSP_POT_Read());
-
-	GenControl.frequency = (float) (selectedItem->parameter);
-}
-void callbackType(void *m) {
-	static uint32_t type = 0;
-
-	Menu_t *menu = ((Menu_t*) m);
-	MenuItem_t *selectedItem = menu->items[menu->selectedIndex];
-
-	type++;
-	if (type == GEN_CONTROL_TYPE_NUM)
-		type = 0;
-
-	switch (type) {
-	case 0:
-		selectedItem->parameter = (uint32_t) "SIN";
-		break;
-	case 1:
-		selectedItem->parameter = (uint32_t) "TRIANGLE";
-		break;
-	case 2:
-		selectedItem->parameter = (uint32_t) "SQUARE";
-		break;
-	case 3:
-		selectedItem->parameter = (uint32_t) "SAWTOOTH";
-		break;
-	default:
-		break;
-	}
-
-	GenControl.type = (uint16_t) (selectedItem->parameter);
-}
-void callbackOutput(void *m) {
-	Menu_t *menu = ((Menu_t*) m);
-	MenuItem_t *selectedItem = menu->items[menu->selectedIndex];
-
-	if (selectedItem->parameter == (uint32_t) "Off") {
-		selectedItem->parameter = (uint32_t) "On";
-		GenControl.status = 1;
-	} else {
-		selectedItem->parameter = (uint32_t) "Off";
-		GenControl.status = 0;
-	}
+	DisplayClear();
+	DisplayStringXY("Item callback", 1, 1);
+	DisplayStringXY("Index:", 2, 1);
+	DisplayNumberXY(menu->selectedIndex, 2, 8);
+	DisplayStringXY("Item name:", 2, 0);
 }
 
-MenuItem_t itemBaud = { (uint8_t*) "Baud.", NULL, MENU_PARAMETER_IS_NUMBER, 96000 };
-
-MenuItem_t itemAmplitude = { (uint8_t*) "Ampl.", callbackAmpl, MENU_PARAMETER_IS_NUMBER | MENU_CALLBACK_IS_FUNCTION,
-		1100 };
-MenuItem_t itemFrequency = { (uint8_t*) "Freq.", callbackFreq, MENU_PARAMETER_IS_NUMBER | MENU_CALLBACK_IS_FUNCTION,
-		1000 };
-MenuItem_t itemType = { (uint8_t*) "Type", callbackType, MENU_PARAMETER_IS_STRING | MENU_CALLBACK_IS_FUNCTION,
-		(uint32_t) "SIN" };
-MenuItem_t itemOutput = { (uint8_t*) "Output", callbackOutput, MENU_PARAMETER_IS_STRING | MENU_CALLBACK_IS_FUNCTION,
-		(uint32_t) "Off" };
-
+MenuItem_t miMenuBaud = { (uint8_t*) "Baud", MENU_Callback, MENU_PARAM_IS_NUM_INT, 0 };
+MenuItem_t miSubMenuGen = { (uint8_t*) "Generator", (void*) &mGen, MENU_CALLBACK_IS_SUBMENU, 0 };
+MenuItem_t miSubMenuFilter = { (uint8_t*) "Filter", (void*) &mFilter, MENU_CALLBACK_IS_SUBMENU, 0 };
+MenuItem_t miSubMenuSound = { (uint8_t*) "Sound", (void*) &mSound, MENU_CALLBACK_IS_SUBMENU, 0 };
 //
-Menu_t Menu = { (uint8_t*) "Menu generator", .items =
-		{ &itemBaud, &itemAmplitude, &itemFrequency, &itemType, &itemOutput, 0 } };
-Menu_t *hMenu = &Menu;
+Menu_t mMain = { (uint8_t*) "Main", .items = { &miMenuBaud, &miSubMenuGen, &miSubMenuFilter, &miSubMenuSound, 0 }, .parent = NULL };
+Menu_t *hMainMenu = &mMain;
 
-void MENU_Init(Menu_t *menu) {
-	menu->menuItem = 0;
-	menu->lastMenuItem = 255;
-	menu->cursorTopPos = 0;
-	menu->menuTopPos = 0;
+void MENU_Refresh(Menu_t *menu);
 
-	menu->len = 0;
-	MenuItem_t **iList = menu->items;
+void MENU_Init(void) {
+	uint32_t i = 0;
+	Menu_t *menu[] = { &mMain, &mGen, &mFilter, &mSound, NULL };
 
-	// Get number of items in menu, search for the first NULL
-	for (; *iList != 0; ++iList)
-		menu->len++;
+	while (menu[i] != NULL) {
+		menu[i]->menuItem = 0;
+		menu[i]->lastMenuItem = -1;
+		menu[i]->len = 0;
 
-	// Functional :) - menuItem, menuTopPos, cursorTopPos
-	if (menu->selectedIndex != -1) {				// If item on the first screen
-		if (menu->selectedIndex < MENU_LINES) {
-			menu->menuItem = menu->selectedIndex;
-			menu->cursorTopPos = menu->selectedIndex;
-			menu->menuTopPos = 0;
-		} else {									// Item is on other screen
-			menu->menuItem = menu->selectedIndex;
-			menu->cursorTopPos = MENU_LINES - 1;
-			menu->menuTopPos = menu->selectedIndex - menu->cursorTopPos;
+		MenuItem_t **iList = menu[i]->items;
+		for (; *iList != 0; ++iList)
+			menu[i]->len++;
+		i++;
+	}
+
+	mGen.parent = (void*) &mMain;
+	mFilter.parent = (void*) &mMain;
+
+	// Inicjalizacja domyślnych wartości pozycji menu
+	menu[0]->items[0]->parameter = PDSP_CODEC_BAUDRATE;
+
+}
+
+void MENU_Operation(Menu_t *menu, uint16_t GPIO_Pin) {
+	switch (GPIO_Pin) {
+	case JOY_DOWN_EXTI_LINE:
+		(menu->menuItem != menu->len - 1) ? (menu->menuItem++) : (menu->menuItem = 0);
+		break;
+	case JOY_UP_EXTI_LINE:
+		(menu->menuItem != 0) ? (menu->menuItem--) : (menu->menuItem = menu->len - 1);
+		break;
+	case JOY_LEFT_EXTI_LINE:
+		menu->selectedIndex = 0;
+		if (hMainMenu != (Menu_t*) menu->parent && menu->parent != NULL)
+			hMainMenu = (Menu_t*) menu->parent;
+		MENU_Operation(hMainMenu, 0);
+		break;
+	case JOY_RIGHT_EXTI_LINE:
+	case JOY_OK_EXTI_LINE: {
+		menu->selectedIndex = menu->menuItem;
+		int flags = menu->items[menu->selectedIndex]->flags;
+
+		if (flags & MENU_ITEM_IS_CHECKBOX) {
+			menu->items[menu->selectedIndex]->flags ^= MENU_ITEM_IS_CHECKED;
+			menu->lastMenuItem = -1;
+		}
+		if (flags & MENU_CALLBACK_IS_SUBMENU && menu->items[menu->selectedIndex]->callback) {
+			hMainMenu = ((Menu_t*) menu->items[menu->selectedIndex]->callback);
+			MENU_Operation(hMainMenu, 0);
+		}
+		if (flags & MENU_CALL_IS_FUNCTION && menu->items[menu->selectedIndex]->callback) {
+			(*menu->items[menu->selectedIndex]->callback)(menu);
+			menu->lastMenuItem = -1;
+		}
+		if ((menu->items[menu->selectedIndex]->callback == NULL) && ((flags & MENU_ITEM_IS_CHECKBOX) == 0)) {
+
 		}
 	}
-
-	menu->items[0]->parameter = PDSP_CODEC_BAUDRATE;
-	DisplayClear();
-	DisplayString(menu->title, 1, 1);
-	MENU_Operation(menu, JOY_OK_EXTI_LINE);
+		break;
+	default:
+		menu->lastMenuItem = -1;
+		break;
+	}
+	MENU_Refresh(menu);
 }
 
 void MENU_Value(Menu_t *menu) {
 	uint16_t value = BSP_POT_Read();
 	switch (menu->menuItem) {
+	case 0:
+//		menu->items[0]->parameter = PDSP_CODEC_BAUDRATE;
+		break;
 	case 1:
-		value = (uint16_t) ((PDSP_CODEC_Vpp / 0.002f / BSP_POT_Bres) * value);
+		value = (uint16_t) GET_AMPLITUDE();
 		BSP_SEG_Display(value);
 		break;
 	case 2:
-		value = (uint16_t) ((PDSP_CODEC_Fs / 2.0f / BSP_POT_Bres) * value);
+		value = (uint16_t) GET_FREQUENCY();
+		BSP_SEG_Display(value);
+		break;
+	case 3:
+		value = (uint16_t) GET_PHASE();
 		BSP_SEG_Display(value);
 		break;
 	default:
@@ -165,83 +123,35 @@ void MENU_Value(Menu_t *menu) {
 	}
 }
 
-__STATIC_INLINE void PressDown(Menu_t *menu) {
-	if (menu->menuItem != menu->len - 1) {	// Move to next item
-		menu->menuItem++;
-	} else {	// Last item in menu => go to first item
-		menu->menuItem = 0;
-	}
-}
-
-__STATIC_INLINE void PressUp(Menu_t *menu) {
-	if (menu->menuItem != 0) {
-		menu->menuItem--;
-	} else {					// go to the last item in menu
-		menu->menuItem = menu->len - 1;
-	}
-}
-
-__STATIC_INLINE void PressRight(Menu_t *menu) {
-	menu->selectedIndex = menu->menuItem;
-
-	int flags = menu->items[menu->selectedIndex]->flags;
-
-	if (flags & MENU_ITEM_IS_CHECKBOX) {
-		menu->items[menu->selectedIndex]->flags ^= MENU_ITEM_IS_CHECKED;
-		menu->lastMenuItem = -1;
-	}
-	if (flags & MENU_CALLBACK_IS_FUNCTION && menu->items[menu->selectedIndex]->callback) {
-		(*menu->items[menu->selectedIndex]->callback)(menu);
-		menu->lastMenuItem = -1;
-	}
-}
-
-__STATIC_INLINE void PressLeft(Menu_t *menu) {
-	menu->selectedIndex = 0;
-}
-
-void MENU_Operation(Menu_t *menu, uint16_t GPIO_Pin) {
-
-	switch (GPIO_Pin) {
-	case JOY_LEFT_EXTI_LINE:
-		PressLeft(menu);
-		break;
-	case JOY_DOWN_EXTI_LINE:
-		PressDown(menu);
-		break;
-	case JOY_UP_EXTI_LINE:
-		PressUp(menu);
-		break;
-	case JOY_RIGHT_EXTI_LINE:
-	case JOY_OK_EXTI_LINE:
-		PressRight(menu);
-		break;
-	default:
-		break;
-	}
-
+void MENU_Refresh(Menu_t *menu) {
 	// If menu item changed -> refresh screen
 	if (menu->lastMenuItem != menu->menuItem) {
-		DisplayClearLine(2);
-		DisplayString(menu->title, 1, 1);
-
 		uint32_t index = menu->menuItem;
-
-		// Print submenu
-		DisplayString((menu->items[index]->text), 2, 1);
+		DisplayClear();
+		DisplayStringXY(menu->title, 1, 1);
+		DisplayStringXY((menu->items[index]->text), 2, 1);
 
 		int posx = strlen((char*) menu->items[index]->text) + 2;
-		if ((menu->items[index]->flags & MENU_PARAMETER_MASK) == MENU_PARAMETER_IS_NUMBER) {
-			DisplayNumber(((int )menu->items[index]->parameter), 2, posx);
+		switch (menu->items[index]->flags & MENU_PARAMETER_MASK) {
+		case MENU_PARAM_IS_NUM_INT:
+			DisplayNumberXY(menu->items[index]->parameter, 2, posx)
+			;
+			break;
+		case MENU_PARAM_IS_NUM_FLOAT:
+			DisplayNumberFixXY(menu->items[index]->parameter, 2, posx)
+			;
+			break;
+		case MENU_PARAM_IS_STRING:
+			DisplayStringXY(menu->items[index]->parameter, 2, posx)
+			;
+			break;
 		}
-		if ((menu->items[index]->flags & MENU_PARAMETER_MASK) == MENU_PARAMETER_IS_STRING) {
-			DisplayString((menu->items[index]->parameter), 2, posx);
-		}
+
 		if (menu->items[index]->flags & MENU_ITEM_IS_CHECKBOX) {
 			if (menu->items[index]->flags & MENU_ITEM_IS_CHECKED) {
-				DisplayString("\xF6", 2, posx);
+				DisplayCharXY(0x78, 2, posx);
 			} else {
-				DisplayString("\xF7", 2, posx);
+				DisplayCharXY(0xDB, 2, posx);
 			}
 		}
 		menu->lastMenuItem = menu->menuItem;
