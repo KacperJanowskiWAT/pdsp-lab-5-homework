@@ -13,8 +13,8 @@ typedef enum {
 
 typedef struct {
 	OSC_WaveType_t wavetype;
-	float frequency;
-	float amplitude;
+	float frequency;	// wartość rzeczywista w Hz w zakresie od 0 do Fs/2 (Fs - częstotliwość próbkowania)
+	float amplitude;	// wartość rzeczywista w mV w zakresie od 0 do 1650, w przypadku przekroczenia zakresu nasycenie
 	float duty;
 	float phase;
 	float phaseStep;
@@ -35,19 +35,6 @@ typedef struct {
 	int16_t *value;
 
 } GEN_SinTab_t;
-
-typedef struct {
-	float amplitude;	// wartość rzeczywista w mV w zakresie od 0 do 1650, w przypadku przekroczenia zakresu nasycenie
-	float frequency;	// wartość rzeczywista w Hz w zakresie od 0 do Fs/2 (Fs - częstotliwość próbkowania)
-	float phaseOffset;
-	float duty;
-	uint32_t n;
-	OSC_WaveType_t type;
-
-} GEN_Cfg_t;
-
-void  GEN_Init(GEN_Cfg_t *hGenCfg, OSC_WaveType_t type, float amplitude, float freq, float phaseOffset, float duty);
-channel_t GEN_GetValue(GEN_Cfg_t *hGenCfg);
 
 void OSC_Init(OSC_Cfg_t *hOscCfg, OSC_WaveType_t wavetype, float amplitude, float frequency, float phaseOffset,
 		float duty);
