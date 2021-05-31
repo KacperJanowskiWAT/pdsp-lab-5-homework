@@ -15,7 +15,6 @@ typedef enum {LINEAR, LOG} SWEEP_MODE_t;
 typedef struct {
 	float duration;
 	SWEEP_MODE_t mode;
-
 	float phase;
 	float phaseStep;
 	float phaseStepStart;
