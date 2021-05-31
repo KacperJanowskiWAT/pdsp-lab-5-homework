@@ -37,7 +37,7 @@ int __io_getchar(void) {
  * @retval None
  */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-	MENU_Operation(hMenu, GPIO_Pin);
+	MENU_Operation(hMainMenu, GPIO_Pin);
 	BSP_JOY_Callback(GPIO_Pin);
 	AD_Toggle(13);
 }
@@ -47,17 +47,16 @@ void HAL_SYSTICK_Callback(void) {
 
 	AD_On(15);
 	timer++;
-	BSP_SEG_Callback();
 	if ((timer % 20) == 0) {
 		JOY_StateUpdate();
 	}
 	if (timer == 59) {
-		MENU_Value(hMenu);
+		MENU_Value(hMainMenu);
 		timer = 0;
 	}
+	BSP_SEG_Callback();
 	AD_Off(15);
 }
-
 
 /**
  * @brief  This function is executed in case of error occurrence.
