@@ -51,25 +51,31 @@ enum {
 /* ----------------------------------------------------------------------------
  * Definicja typów do przechowywania wartości próbek
  * --------------------------------------------------------------------------*/
+#if (PDSP_SAMPLE_SIZE == 1)
+typedef 	int8_t	channel_t;
+#else
+typedef 	int16_t	channel_t;
+#endif
+
 typedef union {
 #if (PDSP_SAMPLE_SIZE == 1)
 #if PDSP_NUM_CHANNELS == 1
 	uint8_t uint;
-	int8_t channel[PDSP_NUM_CHANNELS];
+	channel_t channel[PDSP_NUM_CHANNELS];
 	uint8_t tmp[3];
 #elif PDSP_NUM_CHANNELS == 2
 	uint16_t uint;
-	int8_t channel[PDSP_NUM_CHANNELS];
+	channel_t channel[PDSP_NUM_CHANNELS];
 	uint8_t tmp[2];
 #endif
 #else
 #if (PDSP_NUM_CHANNELS == 1)
 	uint16_t uint;
-	int16_t channel[PDSP_NUM_CHANNELS];
+	channel_t channel[PDSP_NUM_CHANNELS];
 	uint8_t tmp[2];
 #elif (PDSP_NUM_CHANNELS == 2)
 	uint32_t uint;
-	int16_t channel[PDSP_NUM_CHANNELS];
+	channel_t channel[PDSP_NUM_CHANNELS];
 #endif
 #endif
 } CODEC_Data;
@@ -81,14 +87,16 @@ typedef struct {
 extern uint32_t CODEC_FS[];
 
 /* Private define ------------------------------------------------------------*/
-#define PDSP_CODEC_Fs						    (float)CODEC_FS[PDSP_FS]
-#define PDSP_CODEC_Ts                      (1 / (float)CODEC_FS[PDSP_FS])
+#define PDSP_CODEC_Fs			         (float)CODEC_FS[PDSP_FS]
+#define PDSP_CODEC_Ts            (1.0f / (float)CODEC_FS[PDSP_FS])
 
 #if (PDSP_SAMPLE_SIZE == 1)
-#define PDSP_CODEC_Vres       (PDSP_CODEC_Vpp / PDSP_CODEC_Bres)	//
+#define PDSP_CODEC_Vres       				   (PDSP_CODEC_Vpp / PDSP_CODEC_Bres)	//
 #else
-#define PDSP_CODEC_Vres       (PDSP_CODEC_Vpp / PDSP_CODEC_Bres)	//
+#define PDSP_CODEC_Vres       				   (PDSP_CODEC_Vpp / PDSP_CODEC_Bres)	//
 #endif
+
+#define PDSP_CODEC_mVres					   (PDSP_CODEC_Vres * 1000.0f)
 
 #define PDSP_CODEC_BUFFOR_LENGTH				PDSP_SAMPLE_SIZE * PDSP_NUM_CHANNELS
 #define PDSP_CODEC_OFFSET_ADC				   (PDSP_CODEC_Bres / 2)
@@ -98,9 +106,9 @@ extern uint32_t CODEC_FS[];
 #define LEFT              	0
 #define RIGHT              	1
 /**/
-#define PDSP_PI                     (float)(M_PI)
-#define PDSP_PI_DIV_2               (float)(M_PI / 2.0)
-#define PDSP_2PI                    (float)(M_PI * 2.0)
+#define PDSP_PI                     (float) (M_PI)
+#define PDSP_PI_DIV_2               (float) (M_PI / 2.0)
+#define PDSP_2PI                    (float) (M_PI * 2.0)
 #define PDSP_2PI_DIV_FS             (float)((M_PI * 2.0) / PDSP_CODEC_Fs)
 #define PDSP_2PI_TS                 (float)((M_PI * 2.0) * PDSP_CODEC_Ts)
 
@@ -111,7 +119,6 @@ extern uint32_t CODEC_FS[];
 #define DEBUG_PROCESSING_IO			7
 
 /* Exported macros ------------------------------------------------------------*/
-
 /* Exported variables ---------------------------------------------------------*/
 
 extern CODEC_Data DataIn, DataOut;
