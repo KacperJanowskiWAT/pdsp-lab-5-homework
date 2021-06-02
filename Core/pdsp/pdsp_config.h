@@ -13,8 +13,8 @@ extern "C" {
 //#define PDSP_MODE             PDSP_MODE_DMA_FRAME
 
 // Do wyboru jedna z lini konfigurującej liczbę kanałów:
-#define PDSP_NUM_CHANNELS       1
-//#define PDSP_NUM_CHANNELS     2
+//#define PDSP_NUM_CHANNELS       1
+#define PDSP_NUM_CHANNELS     2
 
 // Do wyboru jedna z lini konfigurującej rozmiar próbki w bajtach
 #define PDSP_SAMPLE_SIZE		1

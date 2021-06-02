@@ -74,6 +74,8 @@
                                     <listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Drivers/Middleware/STM32_USB_Device_Library/Core/Inc}&quot;"/>
                                     									
                                     <listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Drivers/Middleware/STM32_USB_Device_Library/Class/CDC/Inc}&quot;"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Drivers/Middleware/CodeMeasure}&quot;"/>
                                     								
                                 </option>
                                 								
@@ -128,6 +130,8 @@
                                     <listOptionValue builtIn="false" value="../Drivers/CMSIS/DSP/Include"/>
                                     									
                                     <listOptionValue builtIn="false" value="../Drivers/Middleware/Controller"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Drivers/Middleware/CodeMeasure}&quot;"/>
                                     								
                                 </option>
                                 								
@@ -336,6 +340,8 @@
                                     <listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Drivers/Middleware/STM32_USB_Device_Library/Core/Inc}&quot;"/>
                                     									
                                     <listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Drivers/Middleware/STM32_USB_Device_Library/Class/CDC/Inc}&quot;"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Drivers/Middleware/CodeMeasure}&quot;"/>
                                     								
                                 </option>
                                 								
@@ -382,6 +388,8 @@
                                     <listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Drivers/Middleware/STM32_USB_Device_Library/Core/Inc}&quot;"/>
                                     									
                                     <listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Drivers/Middleware/STM32_USB_Device_Library/Class/CDC/Inc}&quot;"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Drivers/Middleware/CodeMeasure}&quot;"/>
                                     								
                                 </option>
                                 								
@@ -560,6 +568,8 @@
                                     <listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Drivers/Middleware/STM32_USB_Device_Library/Core/Inc}&quot;"/>
                                     									
                                     <listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Drivers/Middleware/STM32_USB_Device_Library/Class/CDC/Inc}&quot;"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Drivers/Middleware/CodeMeasure}&quot;"/>
                                     								
                                 </option>
                                 								
@@ -614,6 +624,8 @@
                                     <listOptionValue builtIn="false" value="../Drivers/Middleware/STM32_USB_Device_Library/Core/Inc"/>
                                     									
                                     <listOptionValue builtIn="false" value="../Drivers/Middleware/STM32_USB_Device_Library/Class/CDC/Inc"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Drivers/Middleware/CodeMeasure}&quot;"/>
                                     								
                                 </option>
                                 								
