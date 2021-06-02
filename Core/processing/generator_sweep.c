@@ -58,3 +58,7 @@ float SWEEP_GetF(SWEEP_Cfg_t *hCfg) {
 
 	return wave;
 }
+
+channel_t SWEEP_GetSample(SWEEP_Cfg_t *hCfg) {
+    return (channel_t) ((hCfg->generator->amplitude * SWEEP_GetF(hCfg)) / PDSP_CODEC_mVres);
+}
