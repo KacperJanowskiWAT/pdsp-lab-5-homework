@@ -227,29 +227,32 @@ static void LCD_Write(uint8_t data) {
 	LCD_GPIO_DataOut();
 
 	LCD_RW_LOW();
-	LCD_E_HIGH();
 	for (uint32_t i = 0; i < 8; ++i)
 		if ((data >> i) & 1)
 			LL_GPIO_SetOutputPin(LCD_Defs[i].port, LCD_Defs[i].pin);
 		else
 			LL_GPIO_ResetOutputPin(LCD_Defs[i].port, LCD_Defs[i].pin);
+
+	LCD_E_HIGH();
+	LCD_E_HIGH();
 	LCD_E_LOW();
 
 	while(LCD_ReadStatus() & 0x80);
 }
 
 static uint8_t LCD_Read(void) {
-	uint8_t data;
+	uint32_t data = 0;
 
 	LCD_GPIO_DataIn();
 
 	LCD_RW_HIGH();
 	LCD_E_HIGH();
+	LCD_E_HIGH();
 	for (uint32_t i = 0; i < 8; ++i) {
-		data |= ((uint8_t) HAL_GPIO_ReadPin(LCD_Defs[i].port, LCD_Defs[i].pin) << i);
+		data |= (LL_GPIO_IsInputPinSet(LCD_Defs[i].port, LCD_Defs[i].pin) << i);
 	}
 	LCD_E_LOW();
-	return data;
+	return (uint8_t)data;
 }
 
 static uint8_t LCD_ReadStatus(void) {
