@@ -50,6 +50,7 @@ void MENU_Init(void) {
 
 	mGen.parent = (void*) &mMain;
 	mFilter.parent = (void*) &mMain;
+	mSound.parent = (void*) &mMain;
 
 	// Inicjalizacja domyślnych wartości pozycji menu
 	menu[0]->items[0]->parameter = PDSP_CODEC_BAUDRATE;

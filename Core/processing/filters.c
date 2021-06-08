@@ -2,52 +2,59 @@
  * filters.c
  *
  *  Created on: 31 maj 2021
- *      Author: pdabal
+ *      Author: pdabal/Kacper Janowski
  */
 
 #include "pdsp/pdsp.h"
 #include "processing/filters.h"
 
-void FIR_InitF(FIR_CfgF_t *hCfg, float *x, float *h, uint32_t n) {
+// new
+void FIR_InitF(FIR_CfgF_t *hCfg, circular_buf_F_t *circBufF, float *x, float *h, uint32_t n) {
 	hCfg->x = x;
 	hCfg->h = h;
 	hCfg->n = n;
 
-	uint32_t i;
-	for (i = n; i > 0; i--) {	// Zerowanie bufora
-		*x = 0.0f;
-		x++;
-	}
+	// uzupelnienie bufora cyklicznego
+	circBufF->buffer = x;
+	circBufF->maxlen = n;
+	circBufF->head = 0;
+	circBufF->tail = 0;
 }
 
-void FIR_InitI(FIR_CfgI_t *hCfg, channel_t *x, channel_t *h, uint32_t n) {
+// new
+void FIR_InitI(FIR_CfgI_t *hCfg, circular_buf_I_t *circBufI, channel_t *x, channel_t *h, uint32_t n) {
 	hCfg->x = x;
 	hCfg->h = h;
 	hCfg->n = n;
 
-	uint32_t i;
-	for (i = n; i > 0; i--) {	// Zerowanie bufora
-		*x = 0;
-		x++;
-	}
+	// uzupelnienie bufora cyklicznego
+	circBufI->buffer = x;
+	circBufI->maxlen = n;
+	circBufI->head = 0;
+	circBufI->tail = 0;
 }
 
-channel_t FIR_GetSampleI(FIR_CfgI_t *hCfg, channel_t value) {
+// new
+channel_t FIR_GetSampleI(FIR_CfgI_t *hCfg, circular_buf_I_t *circBufI, channel_t value) {
 	uint32_t k;
 	int32_t y = 0;
+	channel_t data;
 
 	// Dodanie próbki do bufora
-	hCfg->x[0] = value;
+	// Funkcja która dodaje dane do bufora kołowego
+	circ_buf_I_push(circBufI, value);
 
 	// Suma iloczynów
 	for (k = 0; k < hCfg->n; k++) {
-		y += (hCfg->h[k]) * (hCfg->x[k]);
+		// Użycie funkcji pobierającej dane z bufora kołowego
+		// przy każdym wywołaniu funkcji circ_buf_I_pop odczytywana jest kolejna wartość z bufora
+		// aż do końca czyli do rzędu filtru
+		y += ((hCfg->h[k]) * circ_buf_I_pop(circBufI, &data));
 	}
 
-	// Przesunięcie bufora
-	for (k = (hCfg->n - 1); k > 0; k--) {
-		hCfg->x[k] = hCfg->x[k - 1];
-	}
+	// Nie ma potrzeby przesuwania bufora ponieważ używany jest bufor kołowy
+	// przy kolejnym wywoałanu funkcji rozpocznie się zapis danych do zwiększonego bufora
+	// gdy funkcji wykona się tyle razy ile wynosi rząd filtru, bufor zostanie wyzerowany i procedura rozpocznie sie od poczatku
 
 	if (PDSP_SAMPLE_SIZE == 1)
 		return (channel_t) (y >> 7);
@@ -55,28 +62,35 @@ channel_t FIR_GetSampleI(FIR_CfgI_t *hCfg, channel_t value) {
 		return (channel_t) (y >> 15);
 }
 
-float FIR_GetValueF(FIR_CfgF_t *hCfg, channel_t value) {
+// new
+float FIR_GetValueF(FIR_CfgF_t *hCfg, circular_buf_F_t *circBufF, channel_t value) {
 	uint32_t k;
 	float y = 0.0f;
+	channel_t data;
 
 	// Dodanie próbki do bufora
-	hCfg->x[0] = value * PDSP_CODEC_mVres;
+	// Funkcja która dodaje dane do bufora kołowego
+	circ_buf_F_push(circBufF, (value * PDSP_CODEC_mVres));
 
 	// Suma iloczynów
 	for (k = 0; k < hCfg->n; k++) {
-		y += (hCfg->h[k]) * (hCfg->x[k]);
+		// Użycie funkcji pobierającej dane z bufora kołowego
+		// przy każdym wywołaniu funkcji circ_buf_F_pop odczytywana jest kolejna wartość z bufora
+		// aż do końca czyli do rzędu filtru
+		y += ((hCfg->h[k]) * circ_buf_F_pop(circBufF, &data));
 	}
 
-	// Przesunięcie bufora
-	for (k = (hCfg->n - 1); k > 0; k--) {
-		hCfg->x[k] = hCfg->x[k - 1];
-	}
+	// Nie ma potrzeby przesuwania bufora ponieważ używany jest bufor kołowy
+	// przy kolejnym wywoałanu funkcji rozpocznie się zapis danych do zwiększonego bufora
+	// gdy funkcji wykona się tyle razy ile wynosi rząd filtru, bufor zostanie wyzerowany i procedura rozpocznie sie od poczatku
 
 	return y;
 }
 
-channel_t FIR_GetSampleF(FIR_CfgF_t *hCfg, channel_t value) {
-	return (channel_t) ((FIR_GetValueF(hCfg, value)) / PDSP_CODEC_mVres);
+// new
+// Dodanie do parametrow funckji bufora cyklicznego
+channel_t FIR_GetSampleF(FIR_CfgF_t *hCfg, circular_buf_F_t *circBufF, channel_t value) {
+	return (channel_t) ((FIR_GetValueF(hCfg, circBufF, value)) / PDSP_CODEC_mVres);
 }
 
 float FILTER_GetValueFromSample(channel_t value) {

@@ -34,8 +34,11 @@ float avr, min, max;
 FIR_CfgF_t firAvrF;
 FIR_CfgI_t firAvrI;
 
+circular_buf_F_t circBufF;
+circular_buf_I_t circBufI;
+
 // Rząd filtru uśredniającego
-#define  firAvrLength 				 11
+#define  firAvrLength 				 18	// 71980
 
 // Bufory dla współczynników i próbek
 float hF[firAvrLength];
@@ -64,8 +67,8 @@ int main(void) {
 	FILTER_InitFirAvrF(hF, firAvrLength);
 	FILTER_InitFirAvrI(hI, firAvrLength);
 
-	FIR_InitF(&firAvrF, xF, hF, firAvrLength);
-	FIR_InitI(&firAvrI, xI, hI, firAvrLength);
+	FIR_InitF(&firAvrF, &circBufF, xF, hF, firAvrLength);
+	FIR_InitI(&firAvrI, &circBufI, xI, hI, firAvrLength);
 
 	// Konfiguracja pomiaru czasu realizacji programu
 	CM_Init();								// Konfiguracja modułu do wykonania pomiarów
@@ -88,10 +91,10 @@ int main(void) {
 				x = SWEEP_GetSample(&SweepCfg);
 				CM_Delta(0);				// Zakończenie pomiaru odcinka 0
 				CM_Start(1);				// Rozpoczęcie pomiaru odcinka 1
-				yI = FIR_GetSampleI(&firAvrI, x);
+				yI = FIR_GetSampleI(&firAvrI, &circBufI, x);
 				CM_Delta(1);				// Zakończenie pomiaru odcinka 1
 				CM_Start(2);				// Rozpoczęcie pomiaru odcinka 2
-				yF = FIR_GetSampleF(&firAvrF, x);
+				yF = FIR_GetSampleF(&firAvrF, &circBufF, x);
 				CM_Delta(2);				// Zakończenie pomiaru odcinka 2
 
 				DataOut.channel[LEFT] = x;
