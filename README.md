@@ -7,5 +7,5 @@ Wersja: v1.0.0
 # Informacje o studencie wykonującym ćwiczenie laboratoryjne
 Imię i nazwisko studenta:   Kacper Janowski  
 Numer albumu:               71980 
-Grupa studencka:            WELxxExxSx  
-Data realizacji zajęć:      28.04.2021 r. 
+Grupa studencka:            WELx18EC1S1  
+Data realizacji zajęć:      08.06.2021 r. 
